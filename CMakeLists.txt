@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 2.9)
 project (imweb)
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c++11")
 find_package(PkgConfig REQUIRED)
 
 if (NOT UNIX)
@@ -52,10 +53,19 @@ if (DEFINED EMSCRIPTEN)
     add_dependencies (imweb imgui implot)
     target_include_directories (imweb PRIVATE "${IMGUI_SRCDIR}" "${IMGUI_SRCDIR}/backends")
 
-    set (CMAKE_EXECUTABLE_SUFFIX ".html")
+    configure_file ("${PROJECT_SOURCE_DIR}/imweb.html" "${CMAKE_BINARY_DIR}/imweb.html" COPYONLY)
+
+    set (CMAKE_EXECUTABLE_SUFFIX ".js")
     set (WASM_LDFLAGS "-s WASM=0")
 
     set_target_properties (imweb PROPERTIES COMPILE_FLAGS "-Os")
     set_target_properties (imweb PROPERTIES LINK_FLAGS    "-Os ${WASM_LDFLAGS} -s USE_WEBGL2=1 -s USE_GLFW=3 -s FULL_ES3=1 --preload-file ${WEBGUI_SRCDIR}/data/xkcd-script.ttf@/data/xkcd-script.ttf")
     set_target_properties (imweb PROPERTIES LINK_LIBRARIES "${CMAKE_BINARY_DIR}/libimgui.a" "${CMAKE_BINARY_DIR}/libimplot.a" "-lglfw3")
+
+    add_custom_target(run)
+    add_custom_command(
+        TARGET run
+        COMMAND BUILD_DIR=${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/run.sh
+    )
+    add_dependencies (run imweb)
 endif ()
