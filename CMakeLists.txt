@@ -1,6 +1,11 @@
 cmake_minimum_required (VERSION 2.9)
 project (imweb)
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c++11")
+
+option (BUILD_EXAMPLES "Build all examples." ON)
+
+set (CMAKE_C_STANDARD 11)
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 find_package(PkgConfig REQUIRED)
 
 if (NOT UNIX)
@@ -16,6 +21,9 @@ macro (AddImguiBackend backend)
     endif ()
 endmacro ()
 
+if (NOT DEFINED EMSCRIPTEN)
+pkg_check_modules(GL REQUIRED gl)
+endif ()
 pkg_check_modules(GLFW REQUIRED glfw3)
 
 set (IMGUI_SRCDIR "${PROJECT_SOURCE_DIR}/imgui")
@@ -48,24 +56,40 @@ target_include_directories (implot PRIVATE "${IMGUI_SRCDIR}")
 target_include_directories (implot PUBLIC "${IMPLOT_SRCDIR}")
 set_property(TARGET implot PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-if (DEFINED EMSCRIPTEN)
-    add_executable (imweb "${WEBGUI_SRCDIR}/main.cpp")
-    add_dependencies (imweb imgui implot)
-    target_include_directories (imweb PRIVATE "${IMGUI_SRCDIR}" "${IMGUI_SRCDIR}/backends")
+if (BUILD_EXAMPLES)
+    add_executable (example "${PROJECT_SOURCE_DIR}/glad/src/glad.c"
+                          "${PROJECT_SOURCE_DIR}/example.cpp")
+    add_dependencies (example imgui implot)
+    target_include_directories (example PRIVATE "${PROJECT_SOURCE_DIR}/glad/include"
+                                              "${IMGUI_SRCDIR}"
+                                              "${IMGUI_SRCDIR}/backends")
+    target_link_libraries (example imgui implot GL glfw)
 
-    configure_file ("${PROJECT_SOURCE_DIR}/imweb.html" "${CMAKE_BINARY_DIR}/imweb.html" COPYONLY)
+    if (DEFINED EMSCRIPTEN)
+        configure_file ("${PROJECT_SOURCE_DIR}/imweb.html" "${CMAKE_BINARY_DIR}/index.html" COPYONLY)
 
-    set (CMAKE_EXECUTABLE_SUFFIX ".js")
-    set (WASM_LDFLAGS "-s WASM=0")
+        set (CMAKE_EXECUTABLE_SUFFIX ".js")
 
-    set_target_properties (imweb PROPERTIES COMPILE_FLAGS "-Os")
-    set_target_properties (imweb PROPERTIES LINK_FLAGS    "-Os ${WASM_LDFLAGS} -s USE_WEBGL2=1 -s USE_GLFW=3 -s FULL_ES3=1 --preload-file ${WEBGUI_SRCDIR}/data/xkcd-script.ttf@/data/xkcd-script.ttf")
-    set_target_properties (imweb PROPERTIES LINK_LIBRARIES "${CMAKE_BINARY_DIR}/libimgui.a" "${CMAKE_BINARY_DIR}/libimplot.a" "-lglfw3")
+        set_target_properties (example PROPERTIES COMPILE_FLAGS "-Os")
+        set_target_properties (example PROPERTIES LINK_FLAGS    "-Os -s WASM=0 -s USE_WEBGL2=1 -s USE_GLFW=3 -s FULL_ES3=1 --preload-file ${WEBGUI_SRCDIR}/data/xkcd-script.ttf@/data/xkcd-script.ttf")
 
-    add_custom_target(run)
-    add_custom_command(
-        TARGET run
-        COMMAND BUILD_DIR=${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/run.sh
-    )
-    add_dependencies (run imweb)
+        add_custom_target (run)
+        add_custom_command (
+            TARGET run
+            COMMAND BUILD_DIR=${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/run.sh
+        )
+    else ()
+        add_custom_command (TARGET example PRE_BUILD
+                            COMMAND ${CMAKE_COMMAND} -E create_symlink
+                            ${WEBGUI_SRCDIR}/data $<TARGET_FILE_DIR:example>/data)
+        add_custom_target (run)
+        add_custom_command (
+            TARGET run
+            COMMAND cd "${CMAKE_BINARY_DIR}" && ./example
+        )
+    endif ()
+
+    add_dependencies (run example)
 endif ()
+
+message (STATUS "Build all examples: ${BUILD_EXAMPLES}")

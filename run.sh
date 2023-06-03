@@ -21,7 +21,7 @@ if [ ! -x "${PYTHON3_COMMAND}" ]; then
     exit
 fi
 
-{ sleep 1; $(command -v xdg-open || printf '%s' 'true') 'http://127.0.0.1:9999/imweb.html'; } &
+{ sleep 1; $(command -v xdg-open || printf '%s' 'true') 'http://127.0.0.1:9999/'; } &
 
 printf '%s: %s' "${0}" "Running Python3 HTTP Server inside '${BUILD_DIR}'."
 cd "${BUILD_DIR}"
