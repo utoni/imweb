@@ -48,6 +48,6 @@
       }
 
     </script>
-    <script async type="text/javascript" src="imweb.js"></script>
+    <script async type="text/javascript" src="@IMWEB_JS_FILE@"></script>
   </body>
 </html>

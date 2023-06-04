@@ -63,10 +63,11 @@ if (BUILD_EXAMPLES)
     target_include_directories (example PRIVATE "${PROJECT_SOURCE_DIR}/glad/include"
                                               "${IMGUI_SRCDIR}"
                                               "${IMGUI_SRCDIR}/backends")
-    target_link_libraries (example imgui implot GL glfw)
+    target_link_libraries (example imgui implot GL glfw ${CMAKE_DL_LIBS})
 
     if (DEFINED EMSCRIPTEN)
-        configure_file ("${PROJECT_SOURCE_DIR}/imweb.html" "${CMAKE_BINARY_DIR}/index.html" COPYONLY)
+        set (IMWEB_JS_FILE "example.js")
+        configure_file ("${PROJECT_SOURCE_DIR}/imweb.html.in" "${CMAKE_BINARY_DIR}/example.html")
 
         set (CMAKE_EXECUTABLE_SUFFIX ".js")
 

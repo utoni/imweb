@@ -1,0 +1,63 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - tmp
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+  release:
+    types: [created]
+
+jobs:
+  test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    env:
+      CMAKE_C_COMPILER: ${{ matrix.compiler }}
+      CMAKE_C_FLAGS: -Werror
+      EMSCRIPTEN_TOOLCHAIN_FILE: ./emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
+    strategy:
+      fail-fast: true
+      matrix:
+        os: ["ubuntu-latest", "ubuntu-20.04"]
+        include:
+          - compiler: "default-cc"
+            os: "ubuntu-latest"
+          - compiler: "clang-12"
+            os: "ubuntu-latest"
+          - compiler: "gcc-10"
+            os: "ubuntu-latest"
+          - compiler: "gcc-7"
+            os: "ubuntu-20.04"
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: false
+          fetch-depth: 1
+      - name: Install Ubuntu Prerequisites
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install git cmake pkg-config libgl-dev libglfw3-dev freeglut3-dev
+          sudo apt-get install ${{ matrix.compiler }}
+      - name: Install EMSDK
+        run: |
+          git clone https://github.com/emscripten-core/emsdk.git
+          cd emsdk
+          git pull
+          ./emsdk install latest
+          ./emsdk activate latest
+      - name: Configure imweb
+        run: |
+          cmake -S . -B ./build -DBUILD_EXAMPLES=OFF
+      - name: Build imweb
+        run: |
+          cmake --build ./build
+      - name: Build script
+        run: |
+          ./build.sh

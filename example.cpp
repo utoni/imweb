@@ -100,6 +100,24 @@ static void loop() {
       ImGui::ShowDemoWindow(&show_demo_window);
     }
 
+    {
+      ImGui::SetNextWindowPos(ImVec2(0, 0));
+      ImGui::SetNextWindowSize(ImVec2(g_width, g_height));
+      ImGui::Begin("Overlay", nullptr,
+                   ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoInputs |
+                       ImGuiWindowFlags_NoMouseInputs |
+                       ImGuiWindowFlags_NoBackground |
+                       ImGuiWindowFlags_NoBringToFrontOnFocus |
+                       ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration);
+
+      auto pDrawList = ImGui::GetWindowDrawList();
+
+      pDrawList->AddRect(ImVec2(25, 25), ImVec2(225, 225), ImColor(255, 0, 0));
+      pDrawList->AddText(ImVec2(25, 25), ImColor(255, 0, 0), "test");
+
+      ImGui::End();
+    }
+
     ImGui::Render();
 
     int display_w, display_h;
