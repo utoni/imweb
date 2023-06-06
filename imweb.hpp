@@ -7,6 +7,8 @@
 #include <optional>
 #include <string>
 
+#define IMWEB_VERSION "0.0.1"
+
 using ImWebCallback = std::function<bool(void)>;
 
 class ImWebBase {
@@ -26,7 +28,7 @@ public:
   void setClearColor(float r, float g, float b, float a);
   void setCurrentWidth(int width);
   void setCurrentHeight(int height);
-  std::array<float, 4> getClearColor();
+  std::array<float, 4> getClearColor() const;
   int getCurrentWidth() const;
   int getCurrentHeight() const;
   void createImGuiContext() const;

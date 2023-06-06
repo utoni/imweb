@@ -22,7 +22,7 @@ void ImWebBase::setClearColor(float r, float g, float b, float a) {
   impl->clear_color = ImVec4(r, g, b, a);
 }
 
-std::array<float, 4> ImWebBase::getClearColor() {
+std::array<float, 4> ImWebBase::getClearColor() const {
   auto const &clear_color = impl->clear_color;
 
   return {clear_color.x, clear_color.y, clear_color.z, clear_color.w};

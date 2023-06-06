@@ -1,5 +1,8 @@
-cmake_minimum_required (VERSION 2.9)
-project (imweb)
+cmake_minimum_required (VERSION 3.0)
+project (imweb LANGUAGES C CXX
+         HOMEPAGE_URL https://github.com/utoni/imweb
+         DESCRIPTION "Dear ImGui + ImPlot + WebGui"
+         VERSION 0.0.1)
 
 option (SINGLE_LIBRARY "Bundle all libraries into one." ON)
 option (BUILD_EXAMPLES "Build all examples." ON)
@@ -78,6 +81,11 @@ macro (BuildExample name)
     add_dependencies (run-${name} ${name})
 endmacro ()
 
+set (pc_libs)
+set (pc_libs_private)
+set (pc_req_private)
+set (pc_req_public)
+
 if (NOT DEFINED EMSCRIPTEN)
     pkg_check_modules (GL REQUIRED gl)
 endif ()
@@ -128,21 +136,48 @@ if (NOT SINGLE_LIBRARY)
 
     add_library (imweb STATIC "${IMWEB_MAIN_SRC_FILES}")
     target_include_directories (imweb PRIVATE "${IMWEB_GLAD_INCLUDE}" "${IMGUI_SRCDIR}" "${IMGUI_SRCDIR}/backends" "${IMPLOT_SRCDIR}")
-    set_property(TARGET imweb PROPERTY POSITION_INDEPENDENT_CODE ON)
+    set_property (TARGET imweb PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+    set_target_properties (imgui PROPERTIES PUBLIC_HEADER "${IMGUI_SRCDIR}/imgui.h;${IMGUI_SRCDIR}/imconfig.h")
+    set_target_properties (implot PROPERTIES PUBLIC_HEADER "${IMPLOT_SRCDIR}/implot.h")
+    set_target_properties (imweb PROPERTIES PUBLIC_HEADER "${PROJECT_SOURCE_DIR}/imweb.hpp;${PROJECT_SOURCE_DIR}/imweb_emscripten_glfw.hpp;${PROJECT_SOURCE_DIR}/imweb_native_glfw.hpp")
+
+    set (pc_libs "-limgui -limplot -limweb")
+
+    install (TARGETS imgui implot imweb
+             ARCHIVE DESTINATION lib/imweb
+             LIBRARY DESTINATION lib/imweb
+             PUBLIC_HEADER DESTINATION include/imweb)
 
 else (SINGLE_LIBRARY)
 
     add_library (imweb STATIC "${IMWEB_MAIN_SRC_FILES}" "${IMGUI_MAIN_SRC_FILES}" "${IMPLOT_MAIN_SRC_FILES}")
     target_include_directories (imweb PRIVATE "${IMWEB_GLAD_INCLUDE}" "${IMGUI_SRCDIR}" "${IMGUI_SRCDIR}/backends" "${IMPLOT_SRCDIR}")
-    set_property(TARGET imweb PROPERTY POSITION_INDEPENDENT_CODE ON)
+    set_property (TARGET imweb PROPERTY POSITION_INDEPENDENT_CODE ON)
+    set_target_properties (imweb PROPERTIES PUBLIC_HEADER "some.h;another.h")
+
+    set_target_properties (imweb PROPERTIES PUBLIC_HEADER "${IMGUI_SRCDIR}/imgui.h;${IMGUI_SRCDIR}/imconfig.h;${IMPLOT_SRCDIR}/implot.h;${PROJECT_SOURCE_DIR}/imweb.hpp;${PROJECT_SOURCE_DIR}/imweb_emscripten_glfw.hpp;${PROJECT_SOURCE_DIR}/imweb_native_glfw.hpp")
+
+    set (pc_libs "-limweb")
+
+    install (TARGETS imweb
+             ARCHIVE DESTINATION lib/imweb
+             LIBRARY DESTINATION lib/imweb
+             PUBLIC_HEADER DESTINATION include/imweb)
 
 endif ()
+
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc
+         DESTINATION lib/pkgconfig)
 
 if (BUILD_EXAMPLES)
     BuildExample ("example")
     BuildExample ("example2")
 endif ()
 
+configure_file (imweb.pc.in imweb.pc @ONLY) 
+
 message (STATUS "Bundle into single library: ${SINGLE_LIBRARY}")
 message (STATUS "Build all examples........: ${BUILD_EXAMPLES}")
 message (STATUS "Link-time optimization....: ${ENABLE_LTO}")
+message (STATUS "Enable ASAN/LSAN/UBSAN....: ${ENABLE_SANITIZER}")

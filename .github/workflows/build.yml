@@ -14,7 +14,7 @@ on:
 
 jobs:
   test:
-    name: ${{ matrix.os }}
+    name: ${{ matrix.os }} ${{ matrix.compiler }}
     runs-on: ${{ matrix.os }}
     env:
       CMAKE_C_COMPILER: ${{ matrix.compiler }}
@@ -27,12 +27,16 @@ jobs:
         include:
           - compiler: "default-cc"
             os: "ubuntu-latest"
+            cmake_options: -DBUILD_EXAMPLES=ON -DENABLE_LTO=ON -DENABLE_SANITIZER=ON -DSINGLE_LIBRARY=ON
           - compiler: "clang-12"
             os: "ubuntu-latest"
+            cmake_options: -DBUILD_EXAMPLES=ON -DENABLE_LTO=OFF -DENABLE_SANITIZER=OFF -DSINGLE_LIBRARY=ON
           - compiler: "gcc-10"
             os: "ubuntu-latest"
+            cmake_options: -DBUILD_EXAMPLES=ON -DENABLE_LTO=ON -DENABLE_SANITIZER=ON -DSINGLE_LIBRARY=OFF
           - compiler: "gcc-7"
             os: "ubuntu-20.04"
+            cmake_options: -DBUILD_EXAMPLES=ON -DENABLE_LTO=OFF -DENABLE_SANITIZER=OFF -DSINGLE_LIBRARY=OFF
 
     steps:
       - uses: actions/checkout@v3
@@ -54,10 +58,18 @@ jobs:
           ./emsdk activate latest
       - name: Configure imweb
         run: |
-          cmake -S . -B ./build -DBUILD_EXAMPLES=OFF
+          cmake -S . -B ./build -DCMAKE_INSTALL_PREFIX=./install/${{ matrix.os }}_${{ matrix.compiler }} ${{ matrix.cmake_options }}
       - name: Build imweb
         run: |
           cmake --build ./build
+      - name: Install imweb
+        run: |
+          cmake --install ./build
+          tree ./install/${{ matrix.os }}_${{ matrix.compiler }}
+          cd ./example3
+          PKG_CONFIG_PATH=$(realpath ../install/usr/local/lib/pkgconfig) cmake -S . -B ./${{ matrix.os }}_${{ matrix.compiler }}
+          cmake --build ./${{ matrix.os }}_${{ matrix.compiler }}
       - name: Build script
+        if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.compiler, 'default-cc')
         run: |
           ./build.sh
