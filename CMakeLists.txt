@@ -1,15 +1,31 @@
 cmake_minimum_required (VERSION 2.9)
 project (imweb)
 
+option (SINGLE_LIBRARY "Bundle all libraries into one." ON)
 option (BUILD_EXAMPLES "Build all examples." ON)
+option (ENABLE_LTO "Enable link-time optimizations." OFF)
+option (ENABLE_SANITIZER "Enable ASAN/LSAN/UBSAN." OFF)
 
 set (CMAKE_C_STANDARD 11)
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-find_package(PkgConfig REQUIRED)
+set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -std=c11")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -std=c++17")
+include_directories (BEFORE SYSTEM "${PROJECT_SOURCE_DIR}")
+find_package (PkgConfig REQUIRED)
+
+if (ENABLE_SANITIZER)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Og -g3 -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined -fno-sanitize=alignment -fsanitize=enum -fsanitize=leak")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Og -g3 -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined -fno-sanitize=alignment -fsanitize=enum -fsanitize=leak")
+    link_libraries (asan ubsan)
+endif ()
 
 if (NOT UNIX)
     message (FATAL_ERROR "Only *nix supported at the moment.")
+endif ()
+
+if (ENABLE_LTO)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flto -ffunction-sections -fdata-sections -Wl,--gc-sections")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto -ffunction-sections -fdata-sections -Wl,--gc-sections")
 endif ()
 
 macro (AddImguiBackend backend)
@@ -21,21 +37,62 @@ macro (AddImguiBackend backend)
     endif ()
 endmacro ()
 
+macro (BuildExample name)
+    add_executable (${name} "${PROJECT_SOURCE_DIR}/${name}.cpp")
+    target_include_directories (${name} PRIVATE "${IMPLOT_SRCDIR}"
+                                                "${IMGUI_SRCDIR}"
+                                                "${IMGUI_SRCDIR}/backends")
+    if (SINGLE_LIBRARY)
+        target_link_libraries (${name} imweb GL glfw X11 ${CMAKE_DL_LIBS})
+        add_dependencies (${name} imweb)
+    else (NOT SINGLE_LIBRARY)
+        target_link_libraries (${name} imweb imgui implot GL glfw X11 ${CMAKE_DL_LIBS})
+        add_dependencies (${name} imweb imgui implot)
+    endif ()
+
+    if (DEFINED EMSCRIPTEN)
+        set (IMWEB_JS_FILE "${name}.js")
+        configure_file ("${PROJECT_SOURCE_DIR}/imweb.html.in" "${CMAKE_BINARY_DIR}/${name}.html")
+
+        set (CMAKE_EXECUTABLE_SUFFIX ".js")
+
+        set_target_properties (${name} PROPERTIES COMPILE_FLAGS "-Os")
+        set_target_properties (${name} PROPERTIES LINK_FLAGS    "-Os -s WASM=0 -s USE_WEBGL2=1 -s USE_GLFW=3 -s FULL_ES3=1 --preload-file ${WEBGUI_SRCDIR}/data/xkcd-script.ttf@/data/xkcd-script.ttf")
+
+        add_custom_target (run-${name})
+        add_custom_command (
+            TARGET run-${name}
+            COMMAND BUILD_DIR=${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/run.sh ${name}
+        )
+    else ()
+        add_custom_command (TARGET ${name} PRE_BUILD
+                            COMMAND ${CMAKE_COMMAND} -E create_symlink
+                            ${WEBGUI_SRCDIR}/data $<TARGET_FILE_DIR:example>/data)
+        add_custom_target (run-${name})
+        add_custom_command (
+            TARGET run-${name}
+            COMMAND cd "${CMAKE_BINARY_DIR}" && ./${name}
+        )
+    endif ()
+
+    add_dependencies (run-${name} ${name})
+endmacro ()
+
 if (NOT DEFINED EMSCRIPTEN)
-pkg_check_modules(GL REQUIRED gl)
+    pkg_check_modules (GL REQUIRED gl)
 endif ()
-pkg_check_modules(GLFW REQUIRED glfw3)
+pkg_check_modules (GLFW REQUIRED glfw3)
 
 set (IMGUI_SRCDIR "${PROJECT_SOURCE_DIR}/imgui")
 set (IMPLOT_SRCDIR "${PROJECT_SOURCE_DIR}/implot")
 set (WEBGUI_SRCDIR "${PROJECT_SOURCE_DIR}/webgui")
 
-if (NOT DEFINED EMSCRIPTEN)
-AddImguiBackend (glut)
-AddImguiBackend (vulkan)
-endif ()
+#if (NOT DEFINED EMSCRIPTEN)
+    #AddImguiBackend (glut)
+    #AddImguiBackend (vulkan)
+#endif ()
 AddImguiBackend (glfw)
-AddImguiBackend (opengl2)
+#AddImguiBackend (opengl2)
 AddImguiBackend (opengl3)
 #AddImguiBackend (sdl2)
 #AddImguiBackend (sdl3)
@@ -46,51 +103,46 @@ file (GLOB IMGUI_MAIN_SRC_FILES "${IMGUI_SRCDIR}/*.cpp"
       "${opengl2_SRCS}" "${opengl3_SRCS}"
       "${sdl2_SRCS}" "${sdl3_SRCS}" "${sdlrenderer_SRCS}"
       "${vulkan_SRCS}")
-add_library (imgui STATIC "${IMGUI_MAIN_SRC_FILES}")
-target_include_directories (imgui PUBLIC "${IMGUI_SRCDIR}" "${IMGUI_SRCDIR}/backends")
-set_property(TARGET imgui PROPERTY POSITION_INDEPENDENT_CODE ON)
-
+list (FILTER IMGUI_MAIN_SRC_FILES EXCLUDE REGEX "imgui_demo\\.cpp")
 file (GLOB IMPLOT_MAIN_SRC_FILES "${IMPLOT_SRCDIR}/*.cpp")
-add_library (implot STATIC "${IMPLOT_MAIN_SRC_FILES}")
-target_include_directories (implot PRIVATE "${IMGUI_SRCDIR}")
-target_include_directories (implot PUBLIC "${IMPLOT_SRCDIR}")
-set_property(TARGET implot PROPERTY POSITION_INDEPENDENT_CODE ON)
-
-if (BUILD_EXAMPLES)
-    add_executable (example "${PROJECT_SOURCE_DIR}/glad/src/glad.c"
-                          "${PROJECT_SOURCE_DIR}/example.cpp")
-    add_dependencies (example imgui implot)
-    target_include_directories (example PRIVATE "${PROJECT_SOURCE_DIR}/glad/include"
-                                              "${IMGUI_SRCDIR}"
-                                              "${IMGUI_SRCDIR}/backends")
-    target_link_libraries (example imgui implot GL glfw ${CMAKE_DL_LIBS})
-
-    if (DEFINED EMSCRIPTEN)
-        set (IMWEB_JS_FILE "example.js")
-        configure_file ("${PROJECT_SOURCE_DIR}/imweb.html.in" "${CMAKE_BINARY_DIR}/example.html")
-
-        set (CMAKE_EXECUTABLE_SUFFIX ".js")
-
-        set_target_properties (example PROPERTIES COMPILE_FLAGS "-Os")
-        set_target_properties (example PROPERTIES LINK_FLAGS    "-Os -s WASM=0 -s USE_WEBGL2=1 -s USE_GLFW=3 -s FULL_ES3=1 --preload-file ${WEBGUI_SRCDIR}/data/xkcd-script.ttf@/data/xkcd-script.ttf")
-
-        add_custom_target (run)
-        add_custom_command (
-            TARGET run
-            COMMAND BUILD_DIR=${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/run.sh
-        )
-    else ()
-        add_custom_command (TARGET example PRE_BUILD
-                            COMMAND ${CMAKE_COMMAND} -E create_symlink
-                            ${WEBGUI_SRCDIR}/data $<TARGET_FILE_DIR:example>/data)
-        add_custom_target (run)
-        add_custom_command (
-            TARGET run
-            COMMAND cd "${CMAKE_BINARY_DIR}" && ./example
-        )
-    endif ()
-
-    add_dependencies (run example)
+list (FILTER IMPLOT_MAIN_SRC_FILES EXCLUDE REGEX "implot_demo\\.cpp")
+file (GLOB IMWEB_MAIN_SRC_FILES "${PROJECT_SOURCE_DIR}/*.cpp")
+list (FILTER IMWEB_MAIN_SRC_FILES EXCLUDE REGEX "example.*cpp$")
+if (DEFINED EMSCRIPTEN)
+    list (FILTER IMWEB_MAIN_SRC_FILES EXCLUDE REGEX "imweb_native_.*cpp$")
+else (NOT DEFINED EMSCRIPTEN)
+    list (FILTER IMWEB_MAIN_SRC_FILES EXCLUDE REGEX "imweb_emscripten_.*cpp$")
+    set (IMWEB_MAIN_SRC_FILES "${IMWEB_MAIN_SRC_FILES}" "${PROJECT_SOURCE_DIR}/glad/src/glad.c")
+    set (IMWEB_GLAD_INCLUDE "${PROJECT_SOURCE_DIR}/glad/include")
 endif ()
 
-message (STATUS "Build all examples: ${BUILD_EXAMPLES}")
+if (NOT SINGLE_LIBRARY)
+
+    add_library (imgui STATIC "${IMGUI_MAIN_SRC_FILES}")
+    target_include_directories (imgui PRIVATE "${IMGUI_SRCDIR}" "${IMGUI_SRCDIR}/backends")
+    set_property(TARGET imgui PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+    add_library (implot STATIC "${IMPLOT_MAIN_SRC_FILES}")
+    target_include_directories (implot PRIVATE "${IMGUI_SRCDIR}" "${IMPLOT_SRCDIR}")
+    set_property(TARGET implot PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+    add_library (imweb STATIC "${IMWEB_MAIN_SRC_FILES}")
+    target_include_directories (imweb PRIVATE "${IMWEB_GLAD_INCLUDE}" "${IMGUI_SRCDIR}" "${IMGUI_SRCDIR}/backends" "${IMPLOT_SRCDIR}")
+    set_property(TARGET imweb PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+else (SINGLE_LIBRARY)
+
+    add_library (imweb STATIC "${IMWEB_MAIN_SRC_FILES}" "${IMGUI_MAIN_SRC_FILES}" "${IMPLOT_MAIN_SRC_FILES}")
+    target_include_directories (imweb PRIVATE "${IMWEB_GLAD_INCLUDE}" "${IMGUI_SRCDIR}" "${IMGUI_SRCDIR}/backends" "${IMPLOT_SRCDIR}")
+    set_property(TARGET imweb PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+endif ()
+
+if (BUILD_EXAMPLES)
+    BuildExample ("example")
+    BuildExample ("example2")
+endif ()
+
+message (STATUS "Bundle into single library: ${SINGLE_LIBRARY}")
+message (STATUS "Build all examples........: ${BUILD_EXAMPLES}")
+message (STATUS "Link-time optimization....: ${ENABLE_LTO}")

@@ -2,6 +2,7 @@
 
 set -e
 
+EXAMPLE="${1}"
 MYDIR="$(realpath $(dirname ${0}))"
 EMSCRIPTEN_BUILD_DIR="${EMSCRIPTEN_BUILD_DIR:-${MYDIR}/build-emscripten}"
 NATIVE_BUILD_DIR="${NATIVE_BUILD_DIR:-${MYDIR}/build-native}"
@@ -22,10 +23,20 @@ if [ ! -x "${PYTHON3_COMMAND}" ]; then
     exit
 fi
 
-{ cd "${NATIVE_BUILD_DIR}" && ./example; } &
-NATIVE_PID=$!
+if [ ! -z "${EXAMPLE}" ]; then
+    printf '%s: %s\n' "${0}" "Running ${EXAMPLE}.."
+    { cd "${NATIVE_BUILD_DIR}" && ./${EXAMPLE}; } &
+fi
+
 { sleep 1; $(command -v xdg-open || printf '%s' 'true') 'http://127.0.0.1:9999/'; } &
 
-printf '%s: %s' "${0}" "Running Python3 HTTP Server inside '${EMSCRIPTEN_BUILD_DIR}'."
+printf '%s: %s\n' "${0}" "Running Python3 HTTP Server inside '${EMSCRIPTEN_BUILD_DIR}'."
 cd "${EMSCRIPTEN_BUILD_DIR}"
+if [ ! -z "${EXAMPLE}" ]; then
+    printf '%s: %s\n' "${0}" "index.html -> ${EXAMPLE}.html"
+    rm -f index.html
+    ln -sr "${EXAMPLE}.html" index.html
+else
+    rm -f index.html
+fi
 ${PYTHON3_COMMAND} -m http.server 9999 --bind 127.0.0.1

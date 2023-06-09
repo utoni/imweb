@@ -7,7 +7,7 @@ My use cases: [nDPId](https://github.com/utoni/nDPId) and my [Cheat SDK](https:/
 
 To create JS/WASM output compatible with modern web browsers, emscripten is used as CC/CXX wrapper.
 
-## Using helper scripts
+## Using helper scripts to build a native/emscripten version
 
 ```shell
 ./build.sh
