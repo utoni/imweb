@@ -78,6 +78,8 @@ macro (BuildExample name)
         )
     endif ()
 
+    set_target_properties(${name} PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS OFF)
+
     add_dependencies (run-${name} ${name})
 endmacro ()
 
@@ -138,6 +140,9 @@ if (NOT SINGLE_LIBRARY)
     target_include_directories (imweb PRIVATE "${IMWEB_GLAD_INCLUDE}" "${IMGUI_SRCDIR}" "${IMGUI_SRCDIR}/backends" "${IMPLOT_SRCDIR}")
     set_property (TARGET imweb PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+    set_target_properties(imgui PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS OFF)
+    set_target_properties(implot PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS OFF)
+
     set_target_properties (imgui PROPERTIES PUBLIC_HEADER "${IMGUI_SRCDIR}/imgui.h;${IMGUI_SRCDIR}/imconfig.h")
     set_target_properties (implot PROPERTIES PUBLIC_HEADER "${IMPLOT_SRCDIR}/implot.h")
     set_target_properties (imweb PROPERTIES PUBLIC_HEADER "${PROJECT_SOURCE_DIR}/imweb.hpp;${PROJECT_SOURCE_DIR}/imweb_emscripten_glfw.hpp;${PROJECT_SOURCE_DIR}/imweb_native_glfw.hpp")
@@ -167,6 +172,8 @@ else (SINGLE_LIBRARY)
 
 endif ()
 
+set_target_properties(imweb PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS OFF)
+
 install (FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc
          DESTINATION lib/pkgconfig)
 
@@ -177,6 +184,14 @@ endif ()
 
 configure_file (imweb.pc.in imweb.pc @ONLY) 
 
+if (DEFINED EMSCRIPTEN)
+set (EMSCRIPTEN_DEFINED "yes")
+else (NOT DEFINED EMSCRIPTEN)
+set (EMSCRIPTEN_DEFINED "no")
+endif ()
+message (STATUS "CMAKE_C_FLAGS.............: ${CMAKE_C_FLAGS}")
+message (STATUS "CMAKE_CXX_FLAGS...........: ${CMAKE_CXX_FLAGS}")
+message (STATUS "Emscripten................: ${EMSCRIPTEN_DEFINED}")
 message (STATUS "Bundle into single library: ${SINGLE_LIBRARY}")
 message (STATUS "Build all examples........: ${BUILD_EXAMPLES}")
 message (STATUS "Link-time optimization....: ${ENABLE_LTO}")

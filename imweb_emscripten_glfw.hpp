@@ -3,6 +3,7 @@
 
 #include <imweb.hpp>
 #include <memory>
+#include <optional>
 
 class ImWeb : public ImWebBase {
 public:

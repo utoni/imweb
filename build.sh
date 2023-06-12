@@ -4,10 +4,20 @@ set -e
 
 MYDIR="$(realpath $(dirname ${0}))"
 JOBCOUNT="${JOBCOUNT:-$(cat /proc/cpuinfo | grep processor | wc -l)}"
-EMSCRIPTEN_TOOLCHAIN_FILE="${EMSCRIPTEN_TOOLCHAIN_FILE:-/usr/lib/emscripten/cmake/Modules/Platform/Emscripten.cmake}"
 EMSCRIPTEN_BUILD_DIR="${EMSCRIPTEN_BUILD_DIR:-${MYDIR}/build-emscripten}"
 NATIVE_BUILD_DIR="${NATIVE_BUILD_DIR:-${MYDIR}/build-native}"
 CMAKE_COMMAND="$(command -v cmake || printf '%s' 'false')"
+
+if [ -z "${EMSCRIPTEN_TOOLCHAIN_FILE}" ]; then
+    if [ -r /usr/lib/emscripten/cmake/Modules/Platform/Emscripten.cmake ]; then
+        EMSCRIPTEN_TOOLCHAIN_FILE="/usr/lib/emscripten/cmake/Modules/Platform/Emscripten.cmake"
+    elif [ -r /usr/share/emscripten/cmake/Modules/Platform/Emscripten.cmake ]; then
+        EMSCRIPTEN_TOOLCHAIN_FILE="/usr/share/emscripten/cmake/Modules/Platform/Emscripten.cmake"
+    else
+        printf '%s: %s\n' "${0}" "No Emscripten toolchain found. Please set EMSCRIPTEN_TOOLCHAIN_FILE manually."
+        exit 1
+    fi
+fi
 
 printf '%s: %s\n' "${0}" "Building native imweb.."
 
@@ -28,6 +38,6 @@ fi
 
 mkdir -p "${EMSCRIPTEN_BUILD_DIR}"
 cd "${EMSCRIPTEN_BUILD_DIR}"
-${CMAKE_COMMAND} --toolchain "${EMSCRIPTEN_TOOLCHAIN_FILE}" -DBUILD_EXAMPLES=ON "${MYDIR}"
+CMAKE_C_FLAGS="${CMAKE_C_FLAGS} -DEMSCRIPTEN=1" ${CMAKE_COMMAND} --toolchain "${EMSCRIPTEN_TOOLCHAIN_FILE}" -DBUILD_EXAMPLES=ON "${MYDIR}"
 ${CMAKE_COMMAND} --build . --parallel "${JOBCOUNT}"
 cd "${MYDIR}"
