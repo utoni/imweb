@@ -3,6 +3,10 @@
 #include "imgui.h"
 #include "implot.h"
 
+#ifdef EMBED_DATA
+#include "webgui-data.c"
+#endif
+
 struct ImWebBase::Impl {
   Impl() {}
   ~Impl() {}
@@ -49,10 +53,17 @@ void ImWebBase::createImGuiContext() const {
 void ImWebBase::setupImGui() const {
   ImGui::StyleColorsDark();
   ImGuiIO &io = ImGui::GetIO();
+#ifdef EMBED_DATA
+  io.Fonts->AddFontFromMemoryTTF(xkcd_script_ttf, sizeof(xkcd_script_ttf), 23.0f);
+  io.Fonts->AddFontFromMemoryTTF(xkcd_script_ttf, sizeof(xkcd_script_ttf), 18.0f);
+  io.Fonts->AddFontFromMemoryTTF(xkcd_script_ttf, sizeof(xkcd_script_ttf), 26.0f);
+  io.Fonts->AddFontFromMemoryTTF(xkcd_script_ttf, sizeof(xkcd_script_ttf), 32.0f);
+#else
   io.Fonts->AddFontFromFileTTF("data/xkcd-script.ttf", 23.0f);
   io.Fonts->AddFontFromFileTTF("data/xkcd-script.ttf", 18.0f);
   io.Fonts->AddFontFromFileTTF("data/xkcd-script.ttf", 26.0f);
   io.Fonts->AddFontFromFileTTF("data/xkcd-script.ttf", 32.0f);
+#endif
   io.Fonts->AddFontDefault();
 }
 

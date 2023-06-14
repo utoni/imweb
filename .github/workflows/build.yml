@@ -45,11 +45,7 @@ jobs:
           sudo apt-get install ${{ matrix.compiler }}
       - name: Install EMSDK
         run: |
-          git clone https://github.com/emscripten-core/emsdk.git
-          cd emsdk
-          git pull
-          ./emsdk install latest
-          ./emsdk activate latest
+          ./get_emsdk.sh
       - name: Configure imweb
         run: |
           cmake -S . -B ./build -DCMAKE_INSTALL_PREFIX=./install/${{ matrix.os }}_${{ matrix.compiler }} ${{ matrix.cmake_options }}
