@@ -45,6 +45,7 @@ endmacro ()
 
 macro (BuildExample name)
     add_executable (${name} "${PROJECT_SOURCE_DIR}/${name}.cpp")
+    install (TARGETS ${name} RUNTIME DESTINATION share/imweb)
     target_include_directories (${name} PRIVATE "${IMPLOT_SRCDIR}"
                                                 "${IMGUI_SRCDIR}"
                                                 "${IMGUI_SRCDIR}/backends")

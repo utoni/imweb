@@ -23,14 +23,18 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: ["ubuntu-latest"]
+        os: [ubuntu-latest, ubuntu-20.04]
+        compiler: [gcc, clang-12, gcc-10]
         include:
           - compiler: "gcc"
             cmake_options: -DBUILD_EXAMPLES=ON -DENABLE_LTO=ON -DENABLE_SANITIZER=ON -DSINGLE_LIBRARY=ON
+            build_example3:
           - compiler: "clang-12"
             cmake_options: -DBUILD_EXAMPLES=ON -DENABLE_LTO=OFF -DENABLE_SANITIZER=OFF -DSINGLE_LIBRARY=ON
+            build_example3: yes
           - compiler: "gcc-10"
             cmake_options: -DBUILD_EXAMPLES=ON -DENABLE_LTO=OFF -DENABLE_SANITIZER=OFF -DSINGLE_LIBRARY=OFF
+            build_example3: yes
 
     steps:
       - uses: actions/checkout@v3
@@ -56,9 +60,17 @@ jobs:
         run: |
           cmake --install ./build
           tree ./install/${{ matrix.os }}_${{ matrix.compiler }}
-          cd ./example3
-          PKG_CONFIG_PATH=$(realpath ../install/${{ matrix.os }}_${{ matrix.compiler }}/lib/pkgconfig) cmake -S . -B ./${{ matrix.os }}_${{ matrix.compiler }}
-          cmake --build ./${{ matrix.os }}_${{ matrix.compiler }} --verbose
+      - name: Build example3
+        if: startsWith(matrix.build_example3, 'yes')
+        run: |
+          PKG_CONFIG_PATH=$(realpath ./install/${{ matrix.os }}_${{ matrix.compiler }}/lib/pkgconfig) cmake -S ./example3 -B ./build-example3_${{ matrix.os }}_${{ matrix.compiler }} -DCMAKE_INSTALL_PREFIX=./install/example3_${{ matrix.os }}_${{ matrix.compiler }}
+          cmake --build ./build-example3_${{ matrix.os }}_${{ matrix.compiler }} --verbose
+          cmake --install ./build-example3_${{ matrix.os }}_${{ matrix.compiler }} --verbose
+          tree ./build-example3_${{ matrix.os }}_${{ matrix.compiler }}
+      - uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: ./install
       - name: Build script (CMake Toolchain)
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.compiler, 'gcc')
         run: |
