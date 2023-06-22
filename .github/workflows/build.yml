@@ -59,7 +59,13 @@ jobs:
           cd ./example3
           PKG_CONFIG_PATH=$(realpath ../install/${{ matrix.os }}_${{ matrix.compiler }}/lib/pkgconfig) cmake -S . -B ./${{ matrix.os }}_${{ matrix.compiler }}
           cmake --build ./${{ matrix.os }}_${{ matrix.compiler }} --verbose
-      - name: Build script
+      - name: Build script (CMake Toolchain)
         if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.compiler, 'gcc')
         run: |
+          ./build.sh
+      - name: Build script (PATH)
+        if: startsWith(matrix.os, 'ubuntu') && startsWith(matrix.compiler, 'gcc')
+        run: |
+          unset EMSCRIPTEN_TOOLCHAIN_FILE
+          source ./emsdk/emsdk_env.sh
           ./build.sh

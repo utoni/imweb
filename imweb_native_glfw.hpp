@@ -1,6 +1,8 @@
 #ifndef IMWEB_NATIVE_GLFW_H
 #define IMWEB_NATIVE_GLFW_H 1
 
+#ifndef __EMSCRIPTEN__
+
 #include <imweb.hpp>
 #include <memory>
 #include <optional>
@@ -18,5 +20,7 @@ private:
   struct Impl;
   std::unique_ptr<Impl> impl;
 };
+
+#endif
 
 #endif

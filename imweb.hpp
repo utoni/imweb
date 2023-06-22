@@ -8,13 +8,14 @@
 #include <string>
 
 #define IMWEB_VERSION "0.0.1"
+#define properties public
 
 using ImWebCallback = std::function<bool(void)>;
 
 class ImWebDrawable {
 public:
-  explicit ImWebDrawable(std::string id) : m_id(id) {}
-  virtual ~ImWebDrawable() = 0;
+  explicit ImWebDrawable(std::string id);
+  virtual ~ImWebDrawable();
   virtual bool draw() = 0;
 
   const std::string m_id;
@@ -34,6 +35,7 @@ public:
   virtual void initImGui() = 0;
   virtual void loop(std::optional<ImWebCallback> cb = {}) = 0;
 
+  bool draw();
   void setClearColor(float r, float g, float b, float a);
   void setCurrentWidth(int width);
   void setCurrentHeight(int height);
@@ -44,6 +46,7 @@ public:
   void setupImGui() const;
   void addDrawable(std::shared_ptr<ImWebDrawable> drawable);
   bool delDrawable(std::shared_ptr<ImWebDrawable> drawable);
+  std::size_t getDrawableCount() const;
 
   static void defaultUi();
 

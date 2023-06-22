@@ -1,5 +1,7 @@
 #include "imweb_emscripten_glfw.hpp"
 
+#ifdef __EMSCRIPTEN__
+
 #include <emscripten.h>
 
 #define GLFW_INCLUDE_ES3
@@ -73,11 +75,14 @@ void ImWeb::Impl::emscripten_loop(void *this_ptr) {
   ImGui::NewFrame();
 
   /* ----------------------------------------- */
-  if (impl->cb.has_value()) {
-    impl->cb.value()();
-  } else {
-    defaultUi();
-  }
+  if (imweb->getDrawableCount() > 0)
+    imweb->draw();
+
+  if (imweb->impl->cb.has_value())
+    imweb->impl->cb.value()();
+
+  if (imweb->getDrawableCount() == 0 && !imweb->impl->cb.has_value())
+    imweb->defaultUi();
   /* ----------------------------------------- */
 
   ImGui::Render();
@@ -89,3 +94,5 @@ void ImWeb::loop(std::optional<ImWebCallback> cb) {
   impl->cb = cb;
   emscripten_set_main_loop_arg(ImWeb::Impl::emscripten_loop, this, 0, 1);
 }
+
+#endif

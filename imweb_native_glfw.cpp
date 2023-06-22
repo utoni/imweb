@@ -1,5 +1,7 @@
 #include "imweb_native_glfw.hpp"
 
+#ifndef __EMSCRIPTEN__
+
 #include "glad/glad.h"
 #include <GLFW/glfw3.h>
 
@@ -88,11 +90,14 @@ void ImWeb::loop(std::optional<ImWebCallback> cb) {
     ImGui::NewFrame();
 
     /* ----------------------------------------- */
-    if (cb.has_value()) {
-      running = cb.value()();
-    } else {
+    if (getDrawableCount() > 0)
+      running &= draw();
+
+    if (cb.has_value())
+      running &= cb.value()();
+
+    if (getDrawableCount() == 0 && !cb.has_value())
       defaultUi();
-    }
     /* ----------------------------------------- */
 
     ImGui::Render();
@@ -100,3 +105,5 @@ void ImWeb::loop(std::optional<ImWebCallback> cb) {
     glfwMakeContextCurrent(impl->m_window);
   }
 }
+
+#endif

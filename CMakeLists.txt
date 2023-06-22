@@ -14,7 +14,9 @@ set (CMAKE_C_STANDARD 11)
 set (CMAKE_CXX_STANDARD 17)
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -std=c11")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror -std=c++17")
-include_directories (BEFORE SYSTEM "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
+
+set (IMWEB_GLAD_INCLUDE "${PROJECT_SOURCE_DIR}/glad/include")
+include_directories (BEFORE SYSTEM "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}" "${IMWEB_GLAD_INCLUDE}")
 find_package (PkgConfig REQUIRED)
 
 if (ENABLE_SANITIZER)
@@ -137,13 +139,7 @@ file (GLOB IMPLOT_MAIN_SRC_FILES "${IMPLOT_SRCDIR}/*.cpp")
 list (FILTER IMPLOT_MAIN_SRC_FILES EXCLUDE REGEX "implot_demo\\.cpp")
 file (GLOB IMWEB_MAIN_SRC_FILES "${PROJECT_SOURCE_DIR}/*.cpp")
 list (FILTER IMWEB_MAIN_SRC_FILES EXCLUDE REGEX "example.*cpp$")
-if (DEFINED EMSCRIPTEN)
-    list (FILTER IMWEB_MAIN_SRC_FILES EXCLUDE REGEX "imweb_native_.*cpp$")
-else (NOT DEFINED EMSCRIPTEN)
-    list (FILTER IMWEB_MAIN_SRC_FILES EXCLUDE REGEX "imweb_emscripten_.*cpp$")
-    set (IMWEB_MAIN_SRC_FILES "${IMWEB_MAIN_SRC_FILES}" "${PROJECT_SOURCE_DIR}/glad/src/glad.c")
-    set (IMWEB_GLAD_INCLUDE "${PROJECT_SOURCE_DIR}/glad/include")
-endif ()
+set (IMWEB_MAIN_SRC_FILES "${IMWEB_MAIN_SRC_FILES}" "${PROJECT_SOURCE_DIR}/glad/src/glad.c")
 
 if (NOT SINGLE_LIBRARY)
 
@@ -156,7 +152,7 @@ if (NOT SINGLE_LIBRARY)
     set_property(TARGET implot PROPERTY POSITION_INDEPENDENT_CODE ON)
 
     add_library (imweb STATIC "${IMWEB_MAIN_SRC_FILES}")
-    target_include_directories (imweb PRIVATE "${IMWEB_GLAD_INCLUDE}" "${IMGUI_SRCDIR}" "${IMGUI_SRCDIR}/backends" "${IMPLOT_SRCDIR}")
+    target_include_directories (imweb PRIVATE "${IMGUI_SRCDIR}" "${IMGUI_SRCDIR}/backends" "${IMPLOT_SRCDIR}")
     set_property (TARGET imweb PROPERTY POSITION_INDEPENDENT_CODE ON)
 
     set_target_properties(imgui PROPERTIES CXX_STANDARD 17 CXX_EXTENSIONS OFF)
@@ -176,7 +172,7 @@ if (NOT SINGLE_LIBRARY)
 else (SINGLE_LIBRARY)
 
     add_library (imweb STATIC "${IMWEB_MAIN_SRC_FILES}" "${IMGUI_MAIN_SRC_FILES}" "${IMPLOT_MAIN_SRC_FILES}")
-    target_include_directories (imweb PRIVATE "${IMWEB_GLAD_INCLUDE}" "${IMGUI_SRCDIR}" "${IMGUI_SRCDIR}/backends" "${IMPLOT_SRCDIR}")
+    target_include_directories (imweb PRIVATE "${IMGUI_SRCDIR}" "${IMGUI_SRCDIR}/backends" "${IMPLOT_SRCDIR}")
     set_property (TARGET imweb PROPERTY POSITION_INDEPENDENT_CODE ON)
     set_target_properties (imweb PROPERTIES PUBLIC_HEADER "some.h;another.h")
 

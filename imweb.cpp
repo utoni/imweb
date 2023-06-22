@@ -19,10 +19,24 @@ struct ImWebBase::Impl {
   int width = 0, height = 0;
 };
 
+ImWebDrawable::ImWebDrawable(std::string id) : m_id(id) {}
+
+ImWebDrawable::~ImWebDrawable() {}
+
 ImWebBase::ImWebBase() : impl{std::make_unique<ImWebBase::Impl>()} {}
 ImWebBase::~ImWebBase() {
   ImPlot::DestroyContext(impl->implot);
   ImGui::DestroyContext();
+}
+
+bool ImWebBase::draw() {
+  bool success = true;
+
+  for (auto &drawable : impl->drawables) {
+    success &= drawable->draw();
+  }
+
+  return success;
 }
 
 void ImWebBase::setClearColor(float r, float g, float b, float a) {
@@ -77,7 +91,7 @@ void ImWebBase::setupImGui() const {
 }
 
 void ImWebBase::addDrawable(std::shared_ptr<ImWebDrawable> drawable) {
-  impl->drawables.emplace_back(drawable);
+  impl->drawables.emplace_back(std::move(drawable));
 }
 
 bool ImWebBase::delDrawable(std::shared_ptr<ImWebDrawable> drawable) {
@@ -89,6 +103,10 @@ bool ImWebBase::delDrawable(std::shared_ptr<ImWebDrawable> drawable) {
       impl->drawables.end());
 
   return end_it == impl->drawables.end();
+}
+
+std::size_t ImWebBase::getDrawableCount() const {
+  return impl->drawables.size();
 }
 
 void ImWebBase::defaultUi() {

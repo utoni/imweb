@@ -105,6 +105,7 @@ static void showShadedPlots(struct plot_data<plot_size> &pd,
   ImGui::End();
 }
 
+// It is possible to draw elements with a provided callback in loop(...).
 static void showDemoWindow(bool *const show_another_window,
                            ImVec4 *const clear_color, float *const f,
                            int *const counter) {
@@ -124,17 +125,37 @@ static void showDemoWindow(bool *const show_another_window,
   ImGui::End();
 }
 
-static void showAnotherWindow(bool *const show_another_window) {
-  ImGui::Begin("Another Window", show_another_window);
-  ImGui::Text("Hello from another window!");
-  if (ImGui::Button("Close Me"))
-    *show_another_window = false;
-  ImGui::End();
-}
+// You can use a "kind-of-widget" approach as well and add it to ImWeb via
+// addDrawable(...).
+class WindowWidget : public ImWebDrawable {
+public:
+  WindowWidget(WindowWidget *p) : ImWebDrawable(p->m_id) {}
+  WindowWidget() : ImWebDrawable("WindowWidget") {}
+  ~WindowWidget() override {}
+  bool draw() override {
+    if (!show)
+      return true;
+
+    ImGui::Begin("Another Window", &show);
+    ImGui::Text("Hello from another window!");
+    if (ImGui::Button("Close Me"))
+      show = false;
+    ImGui::End();
+
+    return true;
+  }
+
+  // clang-format off
+
+// pre-processor macro resolves to public
+properties:
+  bool show = true;
+
+  // clang-format on
+};
 
 int main(int argc, char **argv) {
   ImWeb imweb;
-  bool show_another_window = false;
   ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
   float f = 0.0f;
   int counter = 0;
@@ -142,16 +163,17 @@ int main(int argc, char **argv) {
   float alpha = 0.25f;
   bool anim = true;
   int offset = 0;
+  auto another_window = std::make_shared<WindowWidget>(new WindowWidget());
 
   imweb.init(1024, 768);
+  imweb.addDrawable(another_window);
   imweb.loop([&]() {
     imweb.setClearColor(clear_color.x, clear_color.y, clear_color.z,
                         clear_color.w);
     showShadedPlots(pd, &alpha);
     showTables(&anim, &offset);
-    showDemoWindow(&show_another_window, &clear_color, &f, &counter);
-    if (show_another_window)
-      showAnotherWindow(&show_another_window);
+    showDemoWindow(&another_window->show, &clear_color, &f, &counter);
+
     return true;
   });
 
