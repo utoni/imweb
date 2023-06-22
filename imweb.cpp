@@ -7,10 +7,13 @@
 #include "webgui-data.c"
 #endif
 
+#include <vector>
+
 struct ImWebBase::Impl {
   Impl() {}
   ~Impl() {}
 
+  std::vector<std::shared_ptr<ImWebDrawable>> drawables;
   ImPlotContext *implot = nullptr;
   ImVec4 clear_color = ImVec4{0.0f, 0.0f, 0.0f, 0.0f};
   int width = 0, height = 0;
@@ -54,10 +57,16 @@ void ImWebBase::setupImGui() const {
   ImGui::StyleColorsDark();
   ImGuiIO &io = ImGui::GetIO();
 #ifdef EMBED_DATA
-  io.Fonts->AddFontFromMemoryTTF(xkcd_script_ttf, sizeof(xkcd_script_ttf), 23.0f);
-  io.Fonts->AddFontFromMemoryTTF(xkcd_script_ttf, sizeof(xkcd_script_ttf), 18.0f);
-  io.Fonts->AddFontFromMemoryTTF(xkcd_script_ttf, sizeof(xkcd_script_ttf), 26.0f);
-  io.Fonts->AddFontFromMemoryTTF(xkcd_script_ttf, sizeof(xkcd_script_ttf), 32.0f);
+  ImFontConfig font_cfg;
+  font_cfg.FontDataOwnedByAtlas = false;
+  io.Fonts->AddFontFromMemoryTTF(xkcd_script_ttf, sizeof(xkcd_script_ttf),
+                                 23.0f, &font_cfg);
+  io.Fonts->AddFontFromMemoryTTF(xkcd_script_ttf, sizeof(xkcd_script_ttf),
+                                 18.0f, &font_cfg);
+  io.Fonts->AddFontFromMemoryTTF(xkcd_script_ttf, sizeof(xkcd_script_ttf),
+                                 26.0f, &font_cfg);
+  io.Fonts->AddFontFromMemoryTTF(xkcd_script_ttf, sizeof(xkcd_script_ttf),
+                                 32.0f, &font_cfg);
 #else
   io.Fonts->AddFontFromFileTTF("data/xkcd-script.ttf", 23.0f);
   io.Fonts->AddFontFromFileTTF("data/xkcd-script.ttf", 18.0f);
@@ -65,6 +74,21 @@ void ImWebBase::setupImGui() const {
   io.Fonts->AddFontFromFileTTF("data/xkcd-script.ttf", 32.0f);
 #endif
   io.Fonts->AddFontDefault();
+}
+
+void ImWebBase::addDrawable(std::shared_ptr<ImWebDrawable> drawable) {
+  impl->drawables.emplace_back(drawable);
+}
+
+bool ImWebBase::delDrawable(std::shared_ptr<ImWebDrawable> drawable) {
+  auto end_it = impl->drawables.erase(
+      std::remove_if(impl->drawables.begin(), impl->drawables.end(),
+                     [&drawable](const std::shared_ptr<ImWebDrawable> &d) {
+                       return d->m_id == drawable->m_id;
+                     }),
+      impl->drawables.end());
+
+  return end_it == impl->drawables.end();
 }
 
 void ImWebBase::defaultUi() {

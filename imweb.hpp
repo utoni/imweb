@@ -11,6 +11,15 @@
 
 using ImWebCallback = std::function<bool(void)>;
 
+class ImWebDrawable {
+public:
+  explicit ImWebDrawable(std::string id) : m_id(id) {}
+  virtual ~ImWebDrawable() = 0;
+  virtual bool draw() = 0;
+
+  const std::string m_id;
+};
+
 class ImWebBase {
 public:
   ImWebBase();
@@ -33,6 +42,8 @@ public:
   int getCurrentHeight() const;
   void createImGuiContext() const;
   void setupImGui() const;
+  void addDrawable(std::shared_ptr<ImWebDrawable> drawable);
+  bool delDrawable(std::shared_ptr<ImWebDrawable> drawable);
 
   static void defaultUi();
 
