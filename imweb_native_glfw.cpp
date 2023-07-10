@@ -17,20 +17,21 @@ struct ImWeb::Impl {
 
   GLFWwindow *m_window = NULL;
   static void glfw_error_callback(int error, const char *description);
+  static void glfw_close_callback(GLFWwindow *window);
 };
 
 ImWeb::ImWeb() : ImWebBase(), impl{std::make_unique<ImWeb::Impl>()} {}
 
-ImWeb::~ImWeb() {
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  GlfwHelper::destroy(&impl->m_window);
-}
+ImWeb::~ImWeb() {}
 
 void ImWeb::Impl::glfw_error_callback(int error, const char *description) {
   std::string err_str =
       "GLFW Error #" + std::to_string(error) + ": " + description;
   throw ImWebException(ET::GRAPHICS_BACKEND, err_str);
+}
+
+void ImWeb::Impl::glfw_close_callback(GLFWwindow *window) {
+  // Nothing to do here for now.
 }
 
 void ImWeb::initGL(int width, int height) {
@@ -51,6 +52,8 @@ void ImWeb::initGL(int width, int height) {
     throw ImWebException(ET::GRAPHICS_BACKEND, "GLFW Create Window failed");
   }
 
+  glfwSetWindowUserPointer(impl->m_window, reinterpret_cast<void *>(this));
+  glfwSetWindowCloseCallback(impl->m_window, ImWeb::Impl::glfw_close_callback);
   glfwMakeContextCurrent(impl->m_window);
 
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -67,9 +70,10 @@ void ImWeb::initImGui() {
 }
 
 void ImWeb::loop(std::optional<ImWebCallback> cb) {
-  bool running = true;
+  m_running = true;
+  m_init = true;
 
-  while (running && !glfwWindowShouldClose(impl->m_window)) {
+  while (isRunning()) {
     glfwSwapBuffers(impl->m_window);
     glfwPollEvents();
     glfwMakeContextCurrent(impl->m_window);
@@ -90,11 +94,11 @@ void ImWeb::loop(std::optional<ImWebCallback> cb) {
     ImGui::NewFrame();
 
     /* ----------------------------------------- */
-    if (getDrawableCount() > 0)
-      running &= draw();
+    if (getDrawableCount() > 0 && !draw())
+      m_running = false;
 
-    if (cb.has_value())
-      running &= cb.value()();
+    if (cb.has_value() && !cb.value()())
+      m_running = false;
 
     if (getDrawableCount() == 0 && !cb.has_value())
       defaultUi();
@@ -104,6 +108,24 @@ void ImWeb::loop(std::optional<ImWebCallback> cb) {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     glfwMakeContextCurrent(impl->m_window);
   }
+
+  stop();
+
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  GlfwHelper::destroy(&impl->m_window);
+  m_init = false;
 }
+
+void ImWeb::stop() {
+  m_running = false;
+  glfwSetWindowShouldClose(impl->m_window, GLFW_TRUE);
+}
+
+bool ImWeb::isRunning() const {
+  return m_running && !glfwWindowShouldClose(impl->m_window);
+}
+
+bool ImWeb::isInitialized() const { return m_init; }
 
 #endif

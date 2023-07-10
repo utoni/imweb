@@ -34,6 +34,9 @@ public:
   virtual void initGL(int width, int height) = 0;
   virtual void initImGui() = 0;
   virtual void loop(std::optional<ImWebCallback> cb = {}) = 0;
+  virtual void stop() = 0;
+  virtual bool isRunning() const = 0;
+  virtual bool isInitialized() const = 0;
 
   bool draw();
   void setClearColor(float r, float g, float b, float a);

@@ -15,7 +15,7 @@ if [ -z "${EMSCRIPTEN_TOOLCHAIN_FILE}" ]; then
     elif [ -r /usr/share/emscripten/cmake/Modules/Platform/Emscripten.cmake ]; then
         EMSCRIPTEN_TOOLCHAIN_FILE="/usr/share/emscripten/cmake/Modules/Platform/Emscripten.cmake"
     else
-        if [ ! -z $(command -v emcc || printf '') -a ! -z $(command -v em++ || printf '') -a ! -z $(command -v emar || printf '') -a ! -z $(command -v emranlib || printf '') ]; then
+        if [ ! -z "$(command -v emcc || printf '')" -a ! -z "$(command -v em++ || printf '')" -a ! -z "$(command -v emar || printf '')" -a ! -z "$(command -v emranlib || printf '')" ]; then
             CMAKE_ARGS="${CMAKE_ARGS} -DCMAKE_C_COMPILER=$(command -v emcc) -DCMAKE_CXX_COMPILER=$(command -v em++) -DCMAKE_AR=$(command -v emar) -DCMAKE_RANLIB=$(command -v emranlib) -DEMSCRIPTEN=1"
             printf '%s: %s\n' "${0}" 'No Emscripten toolchain found or set, using emcc/em++/emar/emranlib from your PATH.'
         else

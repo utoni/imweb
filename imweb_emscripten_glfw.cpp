@@ -49,6 +49,7 @@ void ImWeb::initImGui() {
   setupImGui();
 
   resizeCanvas();
+  m_running = true;
 }
 
 void ImWeb::Impl::emscripten_loop(void *this_ptr) {
@@ -94,5 +95,13 @@ void ImWeb::loop(std::optional<ImWebCallback> cb) {
   impl->cb = cb;
   emscripten_set_main_loop_arg(ImWeb::Impl::emscripten_loop, this, 0, 1);
 }
+
+void ImWeb::stop() {}
+
+bool ImWeb::isRunning() const {
+  return m_running && !glfwWindowShouldClose(impl->m_window);
+}
+
+bool ImWeb::isInitialized() const { return m_running; }
 
 #endif
