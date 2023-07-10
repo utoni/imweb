@@ -29,11 +29,7 @@ EM_JS(int, canvas_get_height, (), { return Module.canvas.height; });
 EM_JS(void, resizeCanvas, (), { js_resizeCanvas(); });
 
 ImWeb::ImWeb() : ImWebBase(), impl{std::make_unique<ImWeb::Impl>()} {}
-ImWeb::~ImWeb() {
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  GlfwHelper::destroy(&impl->m_window);
-}
+ImWeb::~ImWeb() {}
 
 void ImWeb::initGL(int width, int height) {
   GlfwHelper::init();
@@ -99,7 +95,7 @@ void ImWeb::loop(std::optional<ImWebCallback> cb) {
 void ImWeb::stop() {}
 
 bool ImWeb::isRunning() const {
-  return m_running && !glfwWindowShouldClose(impl->m_window);
+  return m_running && (!impl->m_window || !glfwWindowShouldClose(impl->m_window));
 }
 
 bool ImWeb::isInitialized() const { return m_running; }

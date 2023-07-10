@@ -119,11 +119,12 @@ void ImWeb::loop(std::optional<ImWebCallback> cb) {
 
 void ImWeb::stop() {
   m_running = false;
-  glfwSetWindowShouldClose(impl->m_window, GLFW_TRUE);
+  if (impl->m_window)
+    glfwSetWindowShouldClose(impl->m_window, GLFW_TRUE);
 }
 
 bool ImWeb::isRunning() const {
-  return m_running && !glfwWindowShouldClose(impl->m_window);
+  return m_running && (!impl->m_window || !glfwWindowShouldClose(impl->m_window));
 }
 
 bool ImWeb::isInitialized() const { return m_init; }
