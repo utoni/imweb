@@ -105,6 +105,16 @@ bool ImWebBase::delDrawable(std::shared_ptr<ImWebDrawable> drawable) {
   return end_it == impl->drawables.end();
 }
 
+std::vector<std::shared_ptr<ImWebDrawable>>::iterator
+ImWebBase::drawablesBegin() {
+  return impl->drawables.begin();
+}
+
+std::vector<std::shared_ptr<ImWebDrawable>>::iterator
+ImWebBase::drawablesEnd() {
+  return impl->drawables.end();
+}
+
 std::size_t ImWebBase::getDrawableCount() const {
   return impl->drawables.size();
 }

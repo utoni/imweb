@@ -33,6 +33,7 @@ public:
   }
   virtual void initGL(int width, int height) = 0;
   virtual void initImGui() = 0;
+  virtual void setTargetFramerate(double fps) = 0;
   virtual void loop(std::optional<ImWebCallback> cb = {}) = 0;
   virtual void stop() = 0;
   virtual bool isRunning() const = 0;
@@ -49,6 +50,8 @@ public:
   void setupImGui() const;
   void addDrawable(std::shared_ptr<ImWebDrawable> drawable);
   bool delDrawable(std::shared_ptr<ImWebDrawable> drawable);
+  std::vector<std::shared_ptr<ImWebDrawable>>::iterator drawablesBegin();
+  std::vector<std::shared_ptr<ImWebDrawable>>::iterator drawablesEnd();
   std::size_t getDrawableCount() const;
 
   static void defaultUi();

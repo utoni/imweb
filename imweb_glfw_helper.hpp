@@ -1,6 +1,8 @@
 #ifndef IMWEB_GLFW_HELPER_H
 #define IMWEB_GLFW_HELPER_H 1
 
+#include <unistd.h>
+
 #include <GLFW/glfw3.h>
 
 #include <array>
@@ -38,6 +40,19 @@ public:
   static void clearColor(std::array<float, 4> const &color) {
     glClearColor(color[0], color[1], color[2], color[3]);
     glClear(GL_COLOR_BUFFER_BIT);
+  }
+
+  static void limitFps(double targetFps, double *frame_start,
+                       double *frame_end) {
+    double wait_time = 1.0 / targetFps;
+    double curr_frame_time = glfwGetTime() - *frame_start;
+    double dur = 1000.0 * 1000.0 * (wait_time - curr_frame_time) + 0.5;
+    int durd = static_cast<unsigned int>(dur);
+    if (durd > 0) {
+      usleep(durd);
+    }
+    *frame_end = glfwGetTime();
+    *frame_start = *frame_end;
   }
 };
 

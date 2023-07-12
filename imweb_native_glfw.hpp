@@ -15,6 +15,7 @@ public:
 
   void initGL(int width, int height) override;
   void initImGui() override;
+  void setTargetFramerate(double fps) override;
   void loop(std::optional<ImWebCallback> cb = {}) override;
   void stop() override;
   bool isRunning() const override;

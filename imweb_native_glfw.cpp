@@ -16,6 +16,7 @@ struct ImWeb::Impl {
   ~Impl() {}
 
   GLFWwindow *m_window = NULL;
+  double m_fps = 30.0;
   static void glfw_error_callback(int error, const char *description);
   static void glfw_close_callback(GLFWwindow *window);
 };
@@ -69,7 +70,10 @@ void ImWeb::initImGui() {
   setupImGui();
 }
 
+void ImWeb::setTargetFramerate(double fps) { impl->m_fps = fps; }
+
 void ImWeb::loop(std::optional<ImWebCallback> cb) {
+  double frame_start = 0.0, frame_end = 0.0;
   m_running = true;
   m_init = true;
 
@@ -107,6 +111,8 @@ void ImWeb::loop(std::optional<ImWebCallback> cb) {
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     glfwMakeContextCurrent(impl->m_window);
+
+    GlfwHelper::limitFps(impl->m_fps, &frame_start, &frame_end);
   }
 
   stop();
@@ -124,7 +130,8 @@ void ImWeb::stop() {
 }
 
 bool ImWeb::isRunning() const {
-  return m_running && (!impl->m_window || !glfwWindowShouldClose(impl->m_window));
+  return m_running &&
+         (!impl->m_window || !glfwWindowShouldClose(impl->m_window));
 }
 
 bool ImWeb::isInitialized() const { return m_init; }
