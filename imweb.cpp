@@ -7,6 +7,7 @@
 #include "webgui-data.c"
 #endif
 
+#include <algorithm>
 #include <vector>
 
 struct ImWebBase::Impl {
