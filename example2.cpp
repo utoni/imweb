@@ -22,13 +22,13 @@ static void showSparkline(const char *id, const float *values, int count,
                           const ImVec4 &col, const ImVec2 &size) {
   ImPlot::PushStyleVar(ImPlotStyleVar_PlotPadding, ImVec2(0, 0));
   if (ImPlot::BeginPlot(id, size,
-                        ImPlotFlags_CanvasOnly | ImPlotFlags_NoChild)) {
+                        ImPlotFlags_CanvasOnly)) {
     ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoDecorations,
                       ImPlotAxisFlags_NoDecorations);
     ImPlot::SetupAxesLimits(0, count - 1, min_v, max_v, ImGuiCond_Always);
-    ImPlot::SetNextLineStyle(col);
-    ImPlot::SetNextFillStyle(col, 0.25);
-    ImPlot::PlotLine(id, values, count, 1, 0, ImPlotLineFlags_Shaded, offset);
+    ImPlotSpec spec;
+    spec.LineColor = col;
+    ImPlot::PlotLine(id, values, count, 1, 0, spec);
     ImPlot::EndPlot();
   }
   ImPlot::PopStyleVar();
@@ -91,15 +91,15 @@ static void showShadedPlots(struct plot_data<plot_size> &pd,
   ImGui::Begin("ImPlot Shaded Plots");
   ImGui::DragFloat("Alpha", alpha, 0.01f, 0, 1);
   if (ImPlot::BeginPlot("Shaded Plots")) {
-    ImPlot::PushStyleVar(ImPlotStyleVar_FillAlpha, *alpha);
+    ImPlotSpec spec;
+    spec.FillAlpha = *alpha;
     ImPlot::PlotShaded("Uncertain Data", &pd.xs[0], &pd.ys1[0], &pd.ys2[0],
-                       plot_size);
+                       plot_size, spec);
     ImPlot::PlotLine("Uncertain Data", &pd.xs[0], &pd.ys[0], plot_size);
     ImPlot::PlotShaded("Overlapping", &pd.xs[0], &pd.ys3[0], &pd.ys4[0],
-                       plot_size);
-    ImPlot::PlotLine("Overlapping", &pd.xs[0], &pd.ys3[0], plot_size);
-    ImPlot::PlotLine("Overlapping", &pd.xs[0], &pd.ys4[0], plot_size);
-    ImPlot::PopStyleVar();
+                       plot_size, spec);
+    ImPlot::PlotLine("Overlapping", &pd.xs[0], &pd.ys3[0], plot_size, spec);
+    ImPlot::PlotLine("Overlapping", &pd.xs[0], &pd.ys4[0], plot_size, spec);
     ImPlot::EndPlot();
   }
   ImGui::End();

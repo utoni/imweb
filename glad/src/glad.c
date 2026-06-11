@@ -162,8 +162,8 @@ struct gladGLversionStruct GLVersion = { 0, 0 };
 #define _GLAD_IS_SOME_NEW_VERSION 1
 #endif
 
-static int max_loaded_major;
-static int max_loaded_minor;
+static int max_loaded_major [[maybe_unused]];
+static int max_loaded_minor [[maybe_unused]];
 
 static const char *exts = NULL;
 static int num_exts_i = 0;

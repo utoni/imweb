@@ -23,21 +23,18 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, ubuntu-20.04]
-        compiler: [gcc, clang-12, gcc-10]
+        os: [ubuntu-latest]
+        compiler: [gcc, clang]
         include:
           - compiler: "gcc"
             cmake_options: -DBUILD_EXAMPLES=ON -DENABLE_LTO=ON -DENABLE_SANITIZER=ON -DSINGLE_LIBRARY=ON
             build_example3:
-          - compiler: "clang-12"
+          - compiler: "clang"
             cmake_options: -DBUILD_EXAMPLES=ON -DENABLE_LTO=OFF -DENABLE_SANITIZER=OFF -DSINGLE_LIBRARY=ON
-            build_example3: yes
-          - compiler: "gcc-10"
-            cmake_options: -DBUILD_EXAMPLES=ON -DENABLE_LTO=OFF -DENABLE_SANITIZER=OFF -DSINGLE_LIBRARY=OFF
             build_example3: yes
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           submodules: false
           fetch-depth: 1
@@ -67,7 +64,7 @@ jobs:
           cmake --build ./build-example3_${{ matrix.os }}_${{ matrix.compiler }} --verbose
           cmake --install ./build-example3_${{ matrix.os }}_${{ matrix.compiler }} --verbose
           tree ./build-example3_${{ matrix.os }}_${{ matrix.compiler }}
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v7
         with:
           name: build-artifacts
           path: ./install
